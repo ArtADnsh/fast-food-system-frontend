@@ -1,0 +1,26 @@
+<!-- بخش Hero (بدون تغییر می‌ماند) -->
+<div class="text-center py-5 mb-4 text-white-shadow">
+    <h1 class="display-4 fw-bold mb-3">طعم بی‌نظیر، تحویل سریع!</h1>
+    <p class="lead fs-4">بهترین رستوران‌های فست‌فود اطراف شما، تنها با چند کلیک.</p>
+    
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-6">
+            <div class="input-group glass-effect rounded-pill p-1">
+                <input type="text" class="form-control border-0 bg-transparent shadow-none ms-2" placeholder="جستجوی نام رستوران یا غذا...">
+                <button class="btn btn-warning rounded-pill px-4" type="button">بگرد</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3 class="fw-bold text-white-shadow mb-4">رستوران‌های پیشنهادی</h3>
+
+<!-- این کانتینر خالی است و داینامیک پر می‌شود -->
+<div id="restaurants-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
+    <!-- یک پیام لودینگ موقت تا زمان دریافت دیتا از بک‌اند -->
+    <div class="col-12 text-center">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">در حال بارگذاری...</span>
+        </div>
+    </div>
+</div>

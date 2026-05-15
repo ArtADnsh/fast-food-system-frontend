@@ -1,0 +1,67 @@
+/* تنظیمات پایه و پس‌زمینه Vibrant */
+body {
+    background: linear-gradient(135deg, #ff4b1f 0%, #ff9068 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    font-family: Tahoma, 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* فاصله دادن محتوا از نوبار ثابت */
+.app-container {
+    margin-top: 100px;
+    flex: 1; /* برای چسباندن فوتر به پایین صفحه */
+}
+
+/* کلاس پایه برای افکت Liquid Glass */
+.glass-effect {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* نوبار شیشه‌ای */
+.glass-nav {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0 0 20px 20px;
+}
+
+/* کارت‌های رستوران و منو (Glassmorphism) */
+.glass-card {
+    background: rgba(255, 255, 255, 0.4); /* کمی سفیدتر برای خوانایی متن */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+/* افکت Hover برای کارت‌ها */
+.glass-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* دکمه‌های شیشه‌ای */
+.glass-btn {
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #333;
+    transition: 0.3s;
+}
+
+.glass-btn:hover {
+    background: rgba(255, 255, 255, 0.6);
+    color: #000;
+}
+
+/* تایپوگرافی متن‌های روی پس‌زمینه اصلی */
+.text-white-shadow {
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
