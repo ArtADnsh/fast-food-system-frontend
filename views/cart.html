@@ -1,0 +1,52 @@
+<div class="container py-4">
+    <h2 class="fw-bold text-white-shadow mb-4">سبد خرید شما</h2>
+
+    <!-- پیام سبد خرید خالی (به صورت پیش‌فرض مخفی است) -->
+    <div id="empty-cart-msg" class="glass-card text-center p-5 d-none">
+        <h3 class="fw-bold text-dark mb-3">سبد خرید شما خالی است!</h3>
+        <p class="text-muted mb-4 text-dark">هنوز هیچ غذای خوشمزه‌ای انتخاب نکرده‌اید.</p>
+        <a href="#home" class="btn btn-warning rounded-pill px-5 py-2 fw-bold">بازگشت به منو</a>
+    </div>
+
+    <!-- محتوای اصلی سبد خرید -->
+    <div id="cart-content" class="row g-4">
+        
+        <!-- سمت راست: لیست آیتم‌های سبد خرید -->
+        <div class="col-lg-8">
+            <!-- این کانتینر توسط جاوا اسکریپت پر می‌شود -->
+            <div id="cart-items-container" class="d-flex flex-column gap-3">
+                <!-- ردیف‌های غذا اینجا لود می‌شوند -->
+            </div>
+        </div>
+
+        <!-- سمت چپ: فاکتور نهایی (Sticky Card) -->
+        <div class="col-lg-4">
+            <!-- با استایل sticky-top این کارت هنگام اسکرول ثابت می‌ماند (فاصله 120px برای رد کردن نوبار) -->
+            <div class="glass-card p-4 sticky-top" style="top: 120px; z-index: 1;">
+                <h4 class="fw-bold mb-4 border-bottom border-secondary pb-3 text-dark">فاکتور نهایی</h4>
+                
+                <div class="d-flex justify-content-between mb-3 text-dark">
+                    <span class="text-dark fw-bold">مبلغ کل غذاها:</span>
+                    <span class="fw-bold" id="cart-subtotal">0 <span class="small fw-normal">تومان</span></span>
+                </div>
+                
+                <div class="d-flex justify-content-between mb-3 text-dark">
+                    <span class="text-dark fw-bold">هزینه ارسال:</span>
+                    <span class="fw-bold" id="cart-delivery">0 <span class="small fw-normal">تومان</span></span>
+                </div>
+                
+                <hr class="border-secondary">
+                
+                <div class="d-flex justify-content-between mb-4 mt-3">
+                    <span class="fs-5 fw-bold text-dark">مبلغ قابل پرداخت:</span>
+                    <span class="fs-5 fw-bold text-success" id="cart-total">0 <span class="small fw-normal text-dark">تومان</span></span>
+                </div>
+                
+                <button class="btn btn-success w-100 rounded-pill py-2 fw-bold shadow glass-btn" style="background-color: rgba(25, 135, 84, 0.8); color: white;">
+                    تکمیل سفارش و پرداخت
+                </button>
+            </div>
+        </div>
+        
+    </div>
+</div>

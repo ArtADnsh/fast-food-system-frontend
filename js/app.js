@@ -170,15 +170,6 @@ async function fetchAndRenderMenu(restaurantId) {
     }
 }
 
-// تابع ساده برای تست دکمه افزودن به سبد خرید
-function addToCart(itemId, itemName, itemPrice) {
-    // فعلاً یک الرت ساده نمایش می‌دهیم تا مطمئن شویم رویداد کار می‌کند
-    alert(`غذا انتخاب شد:\n${itemName}\nقیمت: ${itemPrice.toLocaleString()} تومان`);
-    
-    // چاپ در کنسول برای دیباگ بهتر
-    console.log("آیتم آماده اضافه شدن به سبد:", { id: itemId, name: itemName, price: itemPrice });
-}
-
 
 // ==========================================
 // منطق اصلی مسیریابی (Router)
@@ -205,6 +196,10 @@ async function loadPage() {
         } 
         else if (pageName === 'menu') {
             fetchAndRenderMenu(pageParam);
+        }
+        else if (pageName === 'cart') {
+            // اضافه شدن شرط اجرای صفحه سبد خرید
+            renderCartPage();
         }
         
 
