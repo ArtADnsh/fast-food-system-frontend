@@ -1,7 +1,9 @@
 /* تنظیمات پایه و پس‌زمینه Vibrant */
 body {
-    background: linear-gradient(135deg, #ff4b1f 0%, #ff9068 100%);
-    background-attachment: fixed;
+    /* استفاده از یک عکس باکیفیت از Unsplash به عنوان نمونه */
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                url('../images/background.avif') no-repeat center center fixed;
+    background-size: cover;
     min-height: 100vh;
     font-family: Tahoma, 'Segoe UI', sans-serif;
     display: flex;
@@ -64,4 +66,23 @@ body {
 .text-white-shadow {
     color: white;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* افکت جابه‌جایی رنگ برای دکمه سبد خرید */
+.cart-hover-effect {
+    transition: all 0.2s ease; /* انیمیشن نرم برای تغییر رنگ */
+}
+
+/* تغییر رنگ پس‌زمینه خود دکمه به قرمز */
+.cart-hover-effect:hover {
+    background-color: #dc3545 !important; /* رنگ قرمز استاندارد بوت‌استرپ */
+    border-color: #dc3545 !important;
+    color: white !important;
+}
+
+/* تغییر رنگ عدد داخل دکمه به زرد در زمان Hover */
+.cart-hover-effect:hover #cart-count {
+    background-color: #ffc107 !important; /* رنگ زرد استاندارد بوت‌استرپ */
+    color: #212529 !important; /* رنگ تیره برای خوانایی بهتر عدد روی زرد */
+    transition: all 0.3s ease;
 }
