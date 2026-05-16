@@ -172,16 +172,91 @@ async function fetchAndRenderMenu(restaurantId) {
 
 
 // ==========================================
-// منطق اصلی مسیریابی (Router)
+// منطق صفحه تاریخچه سفارشات
 // ==========================================
+async function fetchAndRenderOrders() {
+    const container = document.getElementById('orders-container');
+    if (!container) return;
 
+    try {
+        // در آینده: اطلاعات از API دریافت می‌شود
+        // const response = await fetch('http://localhost:8000/api/orders/');
+
+        // دیتای فرضی (Mock JSON) برای تست
+        const mockOrders = [
+            { id: 1054, date: "۱۴۰۲/۰۸/۲۵", time: "۲۰:۳۰", total: 450000, status: "delivered", statusText: "تحویل داده شده" },
+            { id: 1089, date: "۱۴۰۲/۰۹/۱۲", time: "۱۹:۱۵", total: 320000, status: "preparing", statusText: "در حال آماده‌سازی" },
+            { id: 1102, date: "امروز", time: "۲۱:۰۰", total: 580000, status: "delivering", statusText: "در مسیر (پیک)" }
+        ];
+
+        container.innerHTML = ''; // پاک کردن وضعیت لودینگ
+
+        if (mockOrders.length === 0) {
+            container.innerHTML = `
+                <div class="glass-card p-5 text-center">
+                    <h4 class="text-dark fw-bold">شما هنوز سفارشی ثبت نکرده‌اید.</h4>
+                    <a href="#home" class="btn btn-warning mt-3 rounded-pill px-4">مشاهده رستوران‌ها</a>
+                </div>`;
+            return;
+        }
+
+        mockOrders.forEach(order => {
+            // تعیین رنگ کلاس بوت‌استرپ بر اساس وضعیت سفارش
+            let badgeClass = 'bg-secondary';
+            if (order.status === 'delivered') badgeClass = 'bg-success';
+            if (order.status === 'preparing') badgeClass = 'bg-warning text-dark';
+            if (order.status === 'delivering') badgeClass = 'bg-info text-dark';
+
+            // ساخت کارت افقی سفارش
+            const cardHTML = `
+                <div class="glass-card p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-2">سفارش #${order.id}</h5>
+                        <span class="text-muted small me-3">📅 ${order.date} - ⏰ ${order.time}</span>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap gap-3 gap-md-4 mt-2 mt-md-0">
+                        <span class="fw-bold fs-5 text-dark">${order.total.toLocaleString()} <span class="small fw-normal">تومان</span></span>
+                        <span class="badge ${badgeClass} rounded-pill px-3 py-2 shadow-sm">${order.statusText}</span>
+                        <button class="btn btn-outline-dark btn-sm rounded-pill px-3 glass-btn">مشاهده فاکتور</button>
+                    </div>
+                </div>
+            `;
+            container.innerHTML += cardHTML;
+        });
+
+    } catch (error) {
+        console.error("خطا در دریافت لیست سفارشات:", error);
+        container.innerHTML = '<div class="glass-card text-center p-4 text-danger fw-bold">خطا در برقراری ارتباط با سرور.</div>';
+    }
+}
+
+
+// ==========================================
+// منطق اصلی مسیریابی (Router) و محافظت از مسیرها
+// ==========================================
 async function loadPage() {
     let hash = window.location.hash.substring(1);
     if (!hash) hash = 'home';
 
-    // مدیریت پارامترها در URL (مثل #menu/1)
     let pageName = hash.split('/')[0]; 
     let pageParam = hash.split('/')[1];
+
+    // --- شروع Route Guard ---
+    // چک کردن وجود توکن با استفاده از تابعی که در auth.js نوشتیم
+    const token = getCookie('access_token');
+
+    // جلوگیری از ورود کاربر لاگین‌شده به صفحه لاگین
+    if (token && (pageName === 'login' || pageName === 'register')) {
+        window.location.hash = 'home';
+        return; // توقف اجرای تابع
+    }
+
+    // جلوگیری از ورود کاربر لاگین‌نشده به صفحات محافظت‌شده
+    if (!token && (pageName === 'orders' || pageName === 'profile')) {
+        window.location.hash = 'login';
+        return; // توقف و هدایت به لاگین
+    }
+    // --- پایان Route Guard ---
 
     try {
         const response = await fetch(`views/${pageName}.html`);
@@ -190,7 +265,7 @@ async function loadPage() {
         const htmlContent = await response.text();
         appContainer.innerHTML = htmlContent;
 
-        // اجرا کردن کدهای مخصوص هر صفحه بعد از لود شدن HTML آن
+        // اجرا کردن کدهای مخصوص هر صفحه بعد از لود شدن HTML
         if (pageName === 'home') {
             fetchAndRenderRestaurants();
         } 
@@ -198,10 +273,11 @@ async function loadPage() {
             fetchAndRenderMenu(pageParam);
         }
         else if (pageName === 'cart') {
-            // اضافه شدن شرط اجرای صفحه سبد خرید
             renderCartPage();
         }
-        
+        else if (pageName === 'orders') {
+            fetchAndRenderOrders(); // اجرای تابع رندر سفارشات
+        }
 
     } catch (error) {
         appContainer.innerHTML = `

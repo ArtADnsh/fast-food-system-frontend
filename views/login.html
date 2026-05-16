@@ -1,0 +1,35 @@
+<div class="row justify-content-center align-items-center" style="min-height: 65vh;">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+        <!-- کارت شیشه‌ای فرم -->
+        <div class="glass-card p-5 text-center shadow-lg">
+            
+            <h2 class="fw-bold mb-4 text-dark">ورود به حساب</h2>
+            
+            <!-- رویداد onsubmit به تابع لاگین متصل شده است -->
+            <form onsubmit="loginUser(event)">
+                
+                <div class="mb-4 text-start">
+                    <label class="form-label text-dark fw-bold">شماره موبایل یا ایمیل</label>
+                    <input type="text" class="form-control glass-effect border-secondary text-dark px-3 py-2" required placeholder="مثال: 09123456789">
+                </div>
+                
+                <div class="mb-4 text-start">
+                    <label class="form-label text-dark fw-bold">رمز عبور</label>
+                    <input type="password" class="form-control glass-effect border-secondary text-dark px-3 py-2" required placeholder="***">
+                </div>
+                
+                <button type="submit" class="btn btn-warning w-100 rounded-pill py-2 mt-2 fw-bold shadow cart-hover-effect">
+                    ورود به پلتفرم
+                </button>
+                
+            </form>
+
+            <hr class="border-secondary my-4">
+            
+            <p class="text-dark small mb-0">
+                حساب کاربری ندارید؟ 
+                <a href="#register" class="text-danger fw-bold text-decoration-none">ثبت‌نام کنید</a>
+            </p>
+        </div>
+    </div>
+</div>
