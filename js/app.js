@@ -233,6 +233,9 @@ async function loadPage() {
         else if (pageName === 'orders') {
             fetchAndRenderOrders(); // اجرای تابع رندر سفارشات
         }
+        else if (pageName === 'profile') {
+            fetchProfile();
+        }
 
     } catch (error) {
         appContainer.innerHTML = `

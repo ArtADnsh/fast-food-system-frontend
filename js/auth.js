@@ -188,5 +188,86 @@ async function registerUser(e) {
     }
 }
 
+// ==========================================
+// منطق پروفایل کاربری (Profile Logic)
+// ==========================================
+
+/**
+ * دریافت اطلاعات کاربر از سرور و پر کردن فرم
+ */
+async function fetchProfile() {
+    const token = getCookie('access_token');
+    if (!token) return;
+
+    try {
+        const response = await fetch('http://localhost:8000/api/profile/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // توکن امنیتی
+            }
+        });
+
+        if (!response.ok) {
+            // اگر توکن منقضی یا نامعتبر بود، کاربر را خارج کن
+            logoutUser();
+            throw new Error('نشست شما منقضی شده است. لطفا دوباره وارد شوید.');
+        }
+
+        const userData = await response.json();
+        
+        // پر کردن فیلدهای فرم با دیتای واقعی
+        document.getElementById('profile-name').value = userData.name;
+        document.getElementById('profile-phone').value = userData.phone;
+        document.getElementById('profile-email').value = userData.email || '';
+
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+/**
+ * ارسال تغییرات جدید به سرور
+ */
+async function updateProfile(e) {
+    e.preventDefault();
+    const token = getCookie('access_token');
+
+    const newName = document.getElementById('profile-name').value;
+    const newEmail = document.getElementById('profile-email').value || null;
+
+    try {
+        // استفاده از متد PATCH برای آپدیت جزئی اطلاعات
+        const response = await fetch('http://localhost:8000/api/profile/', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                name: newName,
+                email: newEmail
+            })
+        });
+
+        if (!response.ok) throw new Error('خطا در ذخیره تغییرات');
+
+        const updatedData = await response.json();
+
+        // آپدیت کردن اطلاعات نوبار
+        const userInfo = JSON.parse(localStorage.getItem('user_info'));
+        userInfo.name = updatedData.name;
+        localStorage.setItem('user_info', JSON.stringify(userInfo));
+        checkAuth(); // رفرش کردن نوبار
+
+        alert('تغییرات با موفقیت ذخیره شد!');
+        window.location.hash = 'home'; // هدایت به صفحه خانه
+        window.location.reload();
+
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
 // اجرای بررسی لاگین به محض لود شدن سایت
 document.addEventListener('DOMContentLoaded', checkAuth);
