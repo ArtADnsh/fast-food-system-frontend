@@ -9,37 +9,9 @@ async function fetchAndRenderRestaurants() {
     const container = document.getElementById('restaurants-container');
     
     try {
-        // در آینده این خط را از کامنت خارج می‌کنی و دیتای واقعی می‌گیری:
-        // const response = await fetch('http://localhost:8000/api/restaurants/');
-        // const restaurants = await response.json();
+        const response = await fetch('http://localhost:8000/api/restaurants/');
+        const restaurants = await response.json();
 
-        // فعلا برای تست فرانت‌اند، دیتای فرضی (Mock) برمی‌گردانیم
-        const restaurants = [
-            {
-                id: 1,
-                name: "پیتزا آفتاب",
-                rating: 4.8,
-                description: "انواع پیتزاهای ایتالیایی و آمریکایی، سالاد",
-                delivery_fee: 0, // 0 یعنی ارسال رایگان
-                image: ""
-            },
-            {
-                id: 2,
-                name: "برگر زغالی بمب",
-                rating: 4.5,
-                description: "برگرهای دست‌ساز، هات‌داگ، سیب‌زمینی ویژه",
-                delivery_fee: 20000,
-                image: ""
-            },
-            {
-                id: 3,
-                name: "سوخاری کرانچ",
-                rating: 4.2,
-                description: "مرغ سوخاری، قارچ سوخاری، سیب‌زمینی",
-                delivery_fee: 15000,
-                image: ""
-            }
-        ];
 
         // پاک کردن پیام لودینگ
         container.innerHTML = '';
@@ -93,25 +65,8 @@ async function fetchAndRenderMenu(restaurantId) {
     const categoriesContainer = document.getElementById('categories-container');
 
     try {
-        // در آینده این خطوط را برای ارتباط با DRF فعال می‌کنی:
-        // const response = await fetch(`http://localhost:8000/api/restaurants/${restaurantId}/menu/`);
-        // const mockData = await response.json();
-
-        // دیتای فرضی (Mock JSON) برای تست فرانت‌اند
-        const mockData = {
-            restaurant: {
-                id: restaurantId,
-                name: "پیتزا آفتاب",
-                rating: 4.8,
-                delivery_fee: 15000
-            },
-            categories: ["پیتزاها", "برگرها", "نوشیدنی‌ها"],
-            items: [
-                { id: 101, name: "پیتزا پپرونی", description: "پپرونی، پنیر موزارلا، سس مخصوص", price: 250000, category: "پیتزاها", image: "" },
-                { id: 102, name: "چیز برگر کلاسیک", description: "گوشت ۱۰۰٪ خالص، پنیر گودا، کاهو، گوجه", price: 180000, category: "برگرها", image: "" },
-                { id: 103, name: "نوشابه قوطی کوکا", description: "۳۳۰ میلی‌لیتر", price: 30000, category: "نوشیدنی‌ها", image: "" }
-            ]
-        };
+        const response = await fetch(`http://localhost:8000/api/restaurants/${restaurantId}/menu/`);
+        const mockData = await response.json();
 
         // ۱. رندر کردن هدر رستوران
         const deliveryText = mockData.restaurant.delivery_fee === 0 

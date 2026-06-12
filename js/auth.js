@@ -41,29 +41,44 @@ function deleteCookie(name) {
 /**
  * تابع لاگین کاربر (متصل به فرم ورود)
  */
-function loginUser(e) {
+async function loginUser(e) {
     e.preventDefault();
+    
+    // Select the input fields (first is phone/email, second is password)
+    const inputs = e.target.querySelectorAll('input');
+    const username = inputs[0].value;
+    const password = inputs[1].value;
 
-    console.log("در حال ارسال درخواست به سرور...");
+    try {
+        const response = await fetch('http://localhost:8000/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
 
-    // یک توکن JWT فرضی (Mock) برای تست فرانت‌اند
-    const mockAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_payload.mock_signature";
-    
-    // ذخیره توکن در کوکی
-    setCookie('access_token', mockAccessToken, 7);
-    
-    // --> ذخیره اطلاعات فرضی کاربر برای نمایش در منو (در آینده از سرور گرفته می‌شود)
-    const userInfo = {
-        name: "آرتا",
-        phone: "09123456789"
-    };
-    localStorage.setItem('user_info', JSON.stringify(userInfo));
-    
-    // آپدیت کردن نوبار
-    checkAuth();
-    
-    // هدایت کاربر به صفحه اصلی
-    window.location.hash = 'home';
+        const data = await response.json();
+
+        if (!response.ok) {
+            // Throw the error message sent from the Django backend
+            throw new Error(data.error || 'ورود ناموفق'); 
+        }
+        
+        // Save the real token and user data from the backend
+        setCookie('access_token', data.access_token, 7);
+        localStorage.setItem('user_info', JSON.stringify(data.user_info));
+        
+        // Update the UI and redirect
+        checkAuth();
+        window.location.hash = 'home';
+        
+    } catch (error) {
+        alert(error.message); // Show error to the user (e.g. wrong password)
+    }
 }
 
 
@@ -122,6 +137,54 @@ function checkAuth() {
         authButtonsContainer.innerHTML = `
             <a href="#login" class="btn glass-btn rounded-pill px-4">ورود</a>
         `;
+    }
+}
+
+
+async function registerUser(e) {
+    e.preventDefault();
+    
+    // Select the input fields from your registration form
+    // Assuming the order is: Name, Phone, Email (optional), Password
+    const inputs = e.target.querySelectorAll('input');
+    const name = inputs[0].value;
+    const phone = inputs[1].value;
+    const email = inputs[2].value || null; // Allow empty email
+    const password = inputs[3].value;
+
+    try {
+        const response = await fetch('http://localhost:8000/api/register/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: phone,
+                email: email,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            // DRF sends validation errors as objects (e.g., {"phone": ["This field must be unique."]})
+            // Let's format them nicely for the user
+            let errorMessage = 'خطا در ثبت‌نام:\n';
+            for (const key in data) {
+                errorMessage += `- ${data[key]}\n`;
+            }
+            throw new Error(errorMessage);
+        }
+        
+        alert("ثبت‌نام با موفقیت انجام شد! حالا می‌توانید وارد شوید.");
+        
+        // Redirect to the login page so they can log in
+        window.location.hash = 'login';
+        
+    } catch (error) {
+        alert(error.message);
     }
 }
 
