@@ -1,26 +1,76 @@
-<!-- بخش Hero (بدون تغییر می‌ماند) -->
 <div class="text-center py-5 mb-4 text-white-shadow">
     <h1 class="display-4 fw-bold mb-3">طعم بی‌نظیر، تحویل سریع!</h1>
     <p class="lead fs-4">بهترین رستوران‌های فست‌فود اطراف شما، تنها با چند کلیک.</p>
     
     <div class="row justify-content-center mt-4">
         <div class="col-md-6">
-            <div class="input-group glass-effect rounded-pill p-1">
-                <input type="text" class="form-control border-0 bg-transparent shadow-none ms-2" placeholder="جستجوی نام رستوران یا غذا...">
-                <button class="btn btn-warning rounded-pill px-4" type="button">بگرد</button>
+            <div class="input-group glass-effect rounded-pill p-1 shadow-sm">
+                <input type="text" id="search-input" oninput="handleSearchInput(event)" class="form-control border-0 bg-transparent shadow-none ms-2 text-dark" placeholder="جستجوی نام رستوران ...">
+                
             </div>
         </div>
     </div>
 </div>
 
+<div class="glass-card p-4 mb-5 shadow-sm">
+    <div class="row g-3 align-items-end">
+        
+        <div class="col-md-3">
+            <label class="form-label text-dark fw-bold small">شهر</label>
+            <select id="filter-city" onchange="applyFilters()" class="form-select rounded-pill">
+                <option value="">همه شهرها</option>
+                <option value="Tehran">تهران</option>
+                <option value="Isfahan">اصفهان</option>
+                <option value="Shiraz">شیراز</option>
+                <option value="Karaj">کرج</option>
+                <option value="Mashhad">مشهد</option>
+                <option value="Tabriz">تبریز</option>
+                <option value="Rasht">رشت</option>
+                <option value="Yazd">یزد</option>
+                <option value="Ahvaz">اهواز</option>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label text-dark fw-bold small">حداقل امتیاز</label>
+            <input type="number" step="0.1" id="filter-min-rating" onchange="applyFilters()" class="form-control rounded-pill" placeholder="مثلا 4.0">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-dark fw-bold small">حداکثر امتیاز</label>
+            <input type="number" step="0.1" id="filter-max-rating" onchange="applyFilters()" class="form-control rounded-pill" placeholder="مثلا 5.0">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label text-dark fw-bold small">مرتب‌سازی بر اساس</label>
+            <select id="sort-options" onchange="applyFilters()" class="form-select rounded-pill border-warning">
+                <option value="">پیش‌فرض</option>
+                <option value="-rating_avg">بیشترین امتیاز</option>
+                <option value="delivery_fee">ارزان‌ترین هزینه ارسال</option>
+                <option value="-total_orders">محبوب‌ترین</option>
+            </select>
+        </div>
+
+        <div class="col-md-2 d-flex align-items-center mb-2">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="filter-free-delivery" onchange="applyFilters()">
+                <label class="form-check-label text-dark fw-bold ms-2" for="filter-free-delivery">ارسال رایگان</label>
+            </div>
+        </div>
+
+    </div>
+</div>
+
 <h3 class="fw-bold text-white-shadow mb-4">رستوران‌های پیشنهادی</h3>
 
-<!-- این کانتینر خالی است و داینامیک پر می‌شود -->
 <div id="restaurants-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
-    <!-- یک پیام لودینگ موقت تا زمان دریافت دیتا از بک‌اند -->
     <div class="col-12 text-center">
         <div class="spinner-border text-light" role="status">
             <span class="visually-hidden">در حال بارگذاری...</span>
         </div>
     </div>
+</div>
+
+<div class="row mt-2 mb-5">
+    <div class="col-12 d-flex justify-content-center gap-2" id="pagination-container">
+        </div>
 </div>

@@ -1,57 +1,141 @@
 const appContainer = document.getElementById('app');
 
 // ==========================================
-// توابع مربوط به صفحه اصلی (Home)
+// منطق صفحه اصلی (Home) - فیلتر و مرتب‌سازی
 // ==========================================
 
-// این تابع در آینده به بک‌اند DRF متصل می‌شود
-async function fetchAndRenderRestaurants() {
+let currentPage = 1;
+let searchTimeout = null;
+
+async function fetchAndRenderRestaurants(page = 1) {
     const container = document.getElementById('restaurants-container');
-    
+    currentPage = page;
+
     try {
-        const response = await fetch('http://localhost:8000/api/restaurants/');
-        const restaurants = await response.json();
+        // ۱. دریافت مقادیر از فرم‌های HTML
+        const searchQuery = document.getElementById('search-input')?.value.trim() || '';
+        const city = document.getElementById('filter-city')?.value || '';
+        const minRating = document.getElementById('filter-min-rating')?.value || '';
+        const maxRating = document.getElementById('filter-max-rating')?.value || '';
+        const freeDelivery = document.getElementById('filter-free-delivery')?.checked || false;
+        const ordering = document.getElementById('sort-options')?.value || '';
 
+        // ۲. ساخت داینامیک URL با URLSearchParams
+        const params = new URLSearchParams();
+        params.append('page', page);
+        
+        if (searchQuery) params.append('search', searchQuery);
+        if (city) params.append('city', city);
+        if (minRating) params.append('min_rating', minRating);
+        if (maxRating) params.append('max_rating', maxRating);
+        if (freeDelivery) params.append('free_delivery', 'true');
+        if (ordering) params.append('ordering', ordering);
 
-        // پاک کردن پیام لودینگ
-        container.innerHTML = '';
+        // ۳. ارسال درخواست به بک‌اند
+        const response = await fetch(`http://localhost:8000/api/restaurants/?${params.toString()}`);
+        if (!response.ok) throw new Error("خطا در دریافت اطلاعات");
+        
+        const data = await response.json();
 
-        // تولید داینامیک HTML برای هر رستوران
-        restaurants.forEach(rest => {
-            // بررسی هزینه ارسال
-            const deliveryText = rest.delivery_fee === 0 
-                ? '<span class="text-success fw-bold small">ارسال رایگان</span>' 
-                : `<span class="text-muted small">هزینه ارسال: ${rest.delivery_fee.toLocaleString()} تومان</span>`;
+        // ۴. رندر کردن دیتا
+        renderRestaurantCards(data.results);
+        renderPaginationControls(data.previous, data.next);
 
-            // ساخت کارت HTML
-            const cardHTML = `
-                <div class="col">
-                    <div class="card glass-card h-100 border-0">
-                        <div style="height: 200px; background-color: rgba(0,0,0,0.1);" class="w-100 d-flex align-items-center justify-content-center">
-                            <span class="text-secondary">عکس رستوران ${rest.id}</span>
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = '<div class="col-12 text-center text-danger mt-4 fw-bold">خطا در دریافت اطلاعات.</div>';
+    }
+}
+
+// تابع Debounce برای سرچ متنی
+function handleSearchInput(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => fetchAndRenderRestaurants(1), 500);
+}
+
+// تابعی که با تغییر هر فیلتر (مثل شهر یا مرتب‌سازی) فراخوانی می‌شود
+function applyFilters() {
+    fetchAndRenderRestaurants(1);
+}
+
+function renderPaginationControls(hasPrev, hasNext) {
+    const container = document.getElementById('pagination-container');
+    if (!container) return;
+
+    // تعیین وضعیت غیرفعال بودن و رنگ دکمه قبلی
+    const prevDisabled = !hasPrev ? 'disabled' : '';
+    const prevBtnClass = !hasPrev ? 'btn-secondary opacity-75' : 'btn-dark glass-btn';
+
+    // تعیین وضعیت غیرفعال بودن و رنگ دکمه بعدی
+    const nextDisabled = !hasNext ? 'disabled' : '';
+    const nextBtnClass = !hasNext ? 'btn-secondary opacity-75' : 'btn-warning';
+
+    container.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center gap-3">
+            
+            <button onclick="fetchAndRenderRestaurants(${currentPage - 1})" 
+                    class="btn ${prevBtnClass} rounded-pill px-4 shadow-sm" 
+                    ${prevDisabled}>
+                قبلی
+            </button>
+
+            <div class="glass-card text-dark fw-bold px-4 py-2 rounded-pill shadow-sm border border-secondary border-opacity-25" style="min-width: 110px; text-align: center;">
+                صفحه ${currentPage}
+            </div>
+
+            <button onclick="fetchAndRenderRestaurants(${currentPage + 1})" 
+                    class="btn ${nextBtnClass} rounded-pill px-4 shadow-sm" 
+                    ${nextDisabled}>
+                بعدی
+            </button>
+            
+        </div>
+    `;
+}
+
+// تابع کمکی برای رسم کارت‌های رستوران
+function renderRestaurantCards(restaurantsToRender) {
+    const container = document.getElementById('restaurants-container');
+    if (!container) return; // ایمنی برای جلوگیری از ارور اگر کانتینر لود نشده باشد
+    container.innerHTML = ''; 
+
+    if (restaurantsToRender.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center mt-5">
+                <div class="glass-card p-4 d-inline-block shadow-sm">
+                    <h5 class="text-dark fw-bold mb-0">رستورانی با این مشخصات یافت نشد 🔍</h5>
+                </div>
+            </div>`;
+        return;
+    }
+
+    restaurantsToRender.forEach(rest => {
+        const deliveryText = rest.delivery_fee === 0 
+            ? '<span class="text-success fw-bold small">ارسال رایگان</span>' 
+            : `<span class="text-muted small">هزینه ارسال: ${rest.delivery_fee.toLocaleString()} تومان</span>`;
+
+        const cardHTML = `
+            <div class="col">
+                <div class="card glass-card h-100 border-0 shadow-sm transition-hover">
+                    <div style="height: 200px; background-color: rgba(0,0,0,0.1);" class="w-100 d-flex align-items-center justify-content-center">
+                        <span class="text-secondary fw-bold">عکس رستوران ${rest.id}</span>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title fw-bold mb-0 text-dark">${rest.name}</h5>
+                            <span class="badge bg-success rounded-pill shadow-sm">${rest.rating} ★</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="card-title fw-bold mb-0">${rest.name}</h5>
-                                <span class="badge bg-success rounded-pill">${rest.rating} ★</span>
-                            </div>
-                            <p class="card-text text-muted small">${rest.description}</p>
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                ${deliveryText}
-                                <a href="#menu/${rest.id}" class="btn btn-dark rounded-pill px-4 btn-sm">مشاهده منو</a>
-                            </div>
+                        <p class="card-text text-muted small">${rest.description}</p>
+                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                            ${deliveryText}
+                            <a href="#menu/${rest.id}" class="btn btn-dark rounded-pill px-4 btn-sm shadow-sm glass-btn text-white">مشاهده منو</a>
                         </div>
                     </div>
                 </div>
-            `;
-            // تزریق کارت به کانتینر
-            container.innerHTML += cardHTML;
-        });
-
-    } catch (error) {
-        console.error("خطا در دریافت اطلاعات رستوران‌ها:", error);
-        container.innerHTML = '<div class="col-12 text-center text-white">خطا در برقراری ارتباط با سرور.</div>';
-    }
+            </div>
+        `;
+        container.innerHTML += cardHTML;
+    });
 }
 
 
