@@ -129,50 +129,64 @@ async function fetchAndRenderMenu(restaurantId) {
 // ==========================================
 // منطق صفحه تاریخچه سفارشات
 // ==========================================
+
+// متغیر سراسری برای ذخیره موقت سفارشات جهت نمایش در فاکتور
+let userOrdersHistory = [];
+
 async function fetchAndRenderOrders() {
     const container = document.getElementById('orders-container');
     if (!container) return;
 
+    const token = getCookie('access_token');
+    if (!token) return;
+
     try {
-        // در آینده: اطلاعات از API دریافت می‌شود
-        // const response = await fetch('http://localhost:8000/api/orders/');
+        const response = await fetch('http://localhost:8000/api/orders/', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        // دیتای فرضی (Mock JSON) برای تست
-        const mockOrders = [
-            { id: 1054, date: "۱۴۰۲/۰۸/۲۵", time: "۲۰:۳۰", total: 450000, status: "delivered", statusText: "تحویل داده شده" },
-            { id: 1089, date: "۱۴۰۲/۰۹/۱۲", time: "۱۹:۱۵", total: 320000, status: "preparing", statusText: "در حال آماده‌سازی" },
-            { id: 1102, date: "امروز", time: "۲۱:۰۰", total: 580000, status: "delivering", statusText: "در مسیر (پیک)" }
-        ];
+        if (!response.ok) throw new Error('خطا در دریافت لیست سفارشات');
 
-        container.innerHTML = ''; // پاک کردن وضعیت لودینگ
+        const orders = await response.json();
+        userOrdersHistory = orders; // ذخیره دیتای دریافتی در متغیر سراسری
+        
+        container.innerHTML = ''; 
 
-        if (mockOrders.length === 0) {
+        if (orders.length === 0) {
             container.innerHTML = `
-                <div class="glass-card p-5 text-center">
+                <div class="glass-card p-5 text-center shadow">
                     <h4 class="text-dark fw-bold">شما هنوز سفارشی ثبت نکرده‌اید.</h4>
-                    <a href="#home" class="btn btn-warning mt-3 rounded-pill px-4">مشاهده رستوران‌ها</a>
+                    <a href="#home" class="btn btn-warning mt-3 rounded-pill px-4 shadow-sm">مشاهده رستوران‌ها</a>
                 </div>`;
             return;
         }
 
-        mockOrders.forEach(order => {
-            // تعیین رنگ کلاس بوت‌استرپ بر اساس وضعیت سفارش
-            let badgeClass = 'bg-secondary';
-            if (order.status === 'delivered') badgeClass = 'bg-success';
-            if (order.status === 'preparing') badgeClass = 'bg-warning text-dark';
-            if (order.status === 'delivering') badgeClass = 'bg-info text-dark';
+        orders.forEach(order => {
+            const dateObj = new Date(order.created_at);
+            const persianDate = new Intl.DateTimeFormat('fa-IR').format(dateObj);
+            const persianTime = dateObj.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
 
-            // ساخت کارت افقی سفارش
+            let badgeClass = 'bg-secondary';
+            let statusText = 'در حال بررسی';
+            if (order.status === 'Pending') { badgeClass = 'bg-warning text-dark'; statusText = 'در حال آماده‌سازی'; }
+            else if (order.status === 'Delivering') { badgeClass = 'bg-info text-dark'; statusText = 'در مسیر (پیک)'; }
+            else if (order.status === 'Delivered') { badgeClass = 'bg-success'; statusText = 'تحویل داده شده'; }
+
+            // 🚨 آپدیت مهم: دکمه مشاهده فاکتور حالا تابع viewInvoice را صدا می‌زند 🚨
             const cardHTML = `
-                <div class="glass-card p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="glass-card p-4 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 shadow-sm">
                     <div>
                         <h5 class="fw-bold text-dark mb-2">سفارش #${order.id}</h5>
-                        <span class="text-muted small me-3">📅 ${order.date} - ⏰ ${order.time}</span>
+                        <span class="text-muted small me-3">📅 ${persianDate} - ⏰ ${persianTime}</span>
                     </div>
                     <div class="d-flex align-items-center flex-wrap gap-3 gap-md-4 mt-2 mt-md-0">
-                        <span class="fw-bold fs-5 text-dark">${order.total.toLocaleString()} <span class="small fw-normal">تومان</span></span>
-                        <span class="badge ${badgeClass} rounded-pill px-3 py-2 shadow-sm">${order.statusText}</span>
-                        <button class="btn btn-outline-dark btn-sm rounded-pill px-3 glass-btn">مشاهده فاکتور</button>
+                        <span class="fw-bold fs-5 text-dark">${order.total_price.toLocaleString()} <span class="small fw-normal">تومان</span></span>
+                        <span class="badge ${badgeClass} rounded-pill px-3 py-2 shadow-sm">${statusText}</span>
+                        <button onclick="viewInvoice(${order.id})" class="btn btn-outline-dark btn-sm rounded-pill px-3 glass-btn">مشاهده فاکتور</button>
                     </div>
                 </div>
             `;
@@ -180,9 +194,41 @@ async function fetchAndRenderOrders() {
         });
 
     } catch (error) {
-        console.error("خطا در دریافت لیست سفارشات:", error);
         container.innerHTML = '<div class="glass-card text-center p-4 text-danger fw-bold">خطا در برقراری ارتباط با سرور.</div>';
     }
+}
+
+/**
+ * تابع نمایش فاکتور در مُدال بوت‌استرپ
+ */
+function viewInvoice(orderId) {
+    // پیدا کردن سفارش مورد نظر از متغیر سراسری
+    const order = userOrdersHistory.find(o => o.id === orderId);
+    if (!order) return;
+
+    // ۱. آپدیت هدر و قیمت کل
+    document.getElementById('invoiceModalTitle').innerText = `فاکتور سفارش #${order.id}`;
+    document.getElementById('invoiceTotalAmount').innerText = `${order.total_price.toLocaleString()} تومان`;
+
+    // ۲. تولید ردیف‌های جدول برای محصولات
+    const tbody = document.getElementById('invoice-items-body');
+    tbody.innerHTML = ''; // پاک کردن محتوای قبلی
+
+    order.items.forEach(item => {
+        tbody.innerHTML += `
+            <tr>
+                <td class="fw-bold">${item.item_name}</td>
+                <td class="text-center">
+                    <span class="badge bg-secondary rounded-pill px-2 py-1">${item.quantity}x</span>
+                </td>
+                <td class="text-end">${item.unit_price.toLocaleString()} <span class="small">تومان</span></td>
+            </tr>
+        `;
+    });
+
+    const modalElement = document.getElementById('invoiceModal');
+    const invoiceModal = new bootstrap.Modal(modalElement);
+    invoiceModal.show();
 }
 
 

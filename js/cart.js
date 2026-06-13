@@ -10,7 +10,7 @@ let cart = [];
  * این تابع هنگام لود اولیه سایت اجرا می‌شود
  */
 function loadCart() {
-    const savedCart = localStorage.getItem('fastfood_cart');
+    const savedCart = localStorage.getItem('cart');
     
     if (savedCart) {
         // تبدیل رشته JSON به آرایه جاوا اسکریپت
@@ -26,7 +26,7 @@ function loadCart() {
  */
 function saveCart() {
     // تبدیل آرایه به رشته JSON برای ذخیره‌سازی
-    localStorage.setItem('fastfood_cart', JSON.stringify(cart));
+    localStorage.setItem('cart', JSON.stringify(cart));
     
     // هر بار که چیزی ذخیره می‌شود، عدد روی نوبار هم باید آپدیت شود
     updateCartBadge();
@@ -189,6 +189,70 @@ function removeFromCart(id) {
     cart = cart.filter(item => item.id !== id);
     saveCart();
     renderCartPage();
+}
+
+/**
+ * ارسال سبد خرید به سرور و ثبت سفارش نهایی
+ */
+async function submitOrder() {
+    // ۱. بررسی ورود کاربر (استفاده از تابعی که در auth.js نوشتیم)
+    const token = getCookie('access_token');
+    if (!token) {
+        alert("برای ثبت سفارش ابتدا باید وارد حساب کاربری خود شوید.");
+        window.location.hash = 'login';
+        return;
+    }
+
+    // ۲. دریافت اطلاعات سبد خرید از حافظه مرورگر
+    const cartData = JSON.parse(localStorage.getItem('cart')) || [];
+    
+    if (cartData.length === 0) {
+        alert("سبد خرید شما خالی است!");
+        return;
+    }
+
+    try {
+        // ۳. ارسال درخواست POST به بک‌اند
+        const response = await fetch('http://localhost:8000/api/checkout/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // توکن امنیتی
+            },
+            body: JSON.stringify({ cart: cartData }) // ارسال آرایه آیتم‌ها
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "خطا در ثبت سفارش");
+        }
+
+        // ۴. موفقیت‌آمیز بود! سبد خرید را خالی کن
+        localStorage.removeItem('cart');
+        
+        // ۵. نمایش پاپ‌آپ شیشه‌ای موفقیت
+        const popup = document.createElement('div');
+        popup.className = 'glass-card p-3 text-center text-success fw-bold shadow-lg';
+        popup.style.position = 'fixed';
+        popup.style.top = '30px';
+        popup.style.left = '50%';
+        popup.style.transform = 'translateX(-50%)';
+        popup.style.zIndex = '9999';
+        popup.style.minWidth = '300px';
+        popup.innerHTML = `سفارش با موفقیت ثبت شد!<br><small class="text-dark">شماره سفارش: ${data.order_id}</small>`;
+        
+        document.body.appendChild(popup);
+
+        // ۶. بعد از ۲ ثانیه، هدایت به صفحه تاریخچه سفارشات
+        setTimeout(() => {
+            document.body.removeChild(popup);
+            window.location.hash = 'orders';
+        }, 2000);
+
+    } catch (error) {
+        alert(error.message);
+    }
 }
 
 // ==========================================
