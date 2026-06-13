@@ -59,70 +59,115 @@ async function fetchAndRenderRestaurants() {
 // توابع مربوط به صفحه منوی رستوران (Menu)
 // ==========================================
 
+// متغیر سراسری برای نگهداری آیتم‌های منو جهت فیلتر کردن سریع
+let currentRestaurantItems = [];
+
 async function fetchAndRenderMenu(restaurantId) {
     const infoContainer = document.getElementById('restaurant-info');
-    const itemsContainer = document.getElementById('menu-items-container');
     const categoriesContainer = document.getElementById('categories-container');
 
     try {
         const response = await fetch(`http://localhost:8000/api/restaurants/${restaurantId}/menu/`);
-        const mockData = await response.json();
+        if (!response.ok) throw new Error("خطا در دریافت اطلاعات منو");
+        
+        const menuData = await response.json();
+        
+        // ذخیره آیتم‌ها در متغیر سراسری برای استفاده در فیلتر
+        currentRestaurantItems = menuData.items;
 
         // ۱. رندر کردن هدر رستوران
-        const deliveryText = mockData.restaurant.delivery_fee === 0 
+        const deliveryText = menuData.restaurant.delivery_fee === 0 
             ? 'ارسال رایگان' 
-            : `هزینه ارسال: ${mockData.restaurant.delivery_fee.toLocaleString()} تومان`;
+            : `هزینه ارسال: ${menuData.restaurant.delivery_fee.toLocaleString()} تومان`;
         
         infoContainer.innerHTML = `
-            <h1 class="display-4 fw-bold mb-2">${mockData.restaurant.name}</h1>
+            <h1 class="display-4 fw-bold mb-2">${menuData.restaurant.name}</h1>
             <div class="d-flex justify-content-center gap-3 fs-5 mt-3">
-                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">${mockData.restaurant.rating} ★</span>
+                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">${menuData.restaurant.rating} ★</span>
                 <span class="badge glass-effect text-white px-3 py-2 shadow-sm border-0">${deliveryText}</span>
             </div>
         `;
 
-        // ۲. رندر کردن دکمه‌های دسته‌بندی
-        categoriesContainer.innerHTML = mockData.categories.map(cat => 
-            `<button class="btn glass-btn rounded-pill px-4 fw-bold shadow-sm">${cat}</button>`
-        ).join('');
-
-        // ۳. رندر کردن آیتم‌های منو
-        itemsContainer.innerHTML = ''; // پاک کردن محتوای قبلی
+        // ۲. رندر کردن دکمه‌های دسته‌بندی (اضافه کردن دکمه "همه")
+        // دکمه "همه" به صورت پیش‌فرض فعال (نارنجی) است
+        let categoriesHTML = `<button onclick="filterMenu('all')" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm category-btn" data-category="all">همه</button>`;
         
-        mockData.items.forEach(item => {
-            const cardHTML = `
-                <div class="col">
-                    <div class="card glass-card h-100 border-0">
-                        <!-- جایگاه عکس غذا -->
-                        <div style="height: 180px; background-color: rgba(0,0,0,0.2);" class="w-100 d-flex align-items-center justify-content-center">
-                            <span class="text-white-shadow">عکس ${item.name}</span>
+        menuData.categories.forEach(cat => {
+            // بقیه دکمه‌ها شیشه‌ای هستند
+            categoriesHTML += `<button onclick="filterMenu('${cat}')" class="btn glass-btn rounded-pill px-4 fw-bold shadow-sm category-btn" data-category="${cat}">${cat}</button>`;
+        });
+        categoriesContainer.innerHTML = categoriesHTML;
+
+        // ۳. رندر اولیه تمام آیتم‌ها
+        renderMenuItems(currentRestaurantItems);
+
+    } catch (error) {
+        console.error("خطا:", error);
+        infoContainer.innerHTML = '<h3 class="text-danger mt-4">خطا در بارگذاری اطلاعات رستوران.</h3>';
+    }
+}
+
+/**
+ * تابع فیلتر کردن منو بر اساس دسته‌بندی
+ */
+function filterMenu(selectedCategory) {
+    // ۱. تغییر استایل دکمه‌ها (خاموش کردن بقیه، روشن کردن دکمه کلیک شده)
+    const allButtons = document.querySelectorAll('.category-btn');
+    allButtons.forEach(btn => {
+        if (btn.getAttribute('data-category') === selectedCategory) {
+            btn.classList.replace('glass-btn', 'btn-warning'); // روشن
+        } else {
+            btn.classList.replace('btn-warning', 'glass-btn'); // خاموش
+        }
+    });
+
+    // ۲. فیلتر کردن آرایه غذاها
+    if (selectedCategory === 'all') {
+        renderMenuItems(currentRestaurantItems); // نمایش همه
+    } else {
+        const filteredItems = currentRestaurantItems.filter(item => item.category === selectedCategory);
+        renderMenuItems(filteredItems); // نمایش فیلتر شده
+    }
+}
+
+/**
+ * تابع کمکی برای رسم کارت‌های غذا
+ */
+function renderMenuItems(itemsToRender) {
+    const itemsContainer = document.getElementById('menu-items-container');
+    itemsContainer.innerHTML = ''; // پاک کردن محتوای قبلی
+    
+    if (itemsToRender.length === 0) {
+        itemsContainer.innerHTML = '<div class="col-12 text-center text-dark mt-4">آیتمی در این دسته‌بندی یافت نشد.</div>';
+        return;
+    }
+
+    itemsToRender.forEach(item => {
+        const cardHTML = `
+            <div class="col">
+                <div class="card glass-card h-100 border-0 shadow-sm">
+                    <div style="height: 180px; background-color: rgba(0,0,0,0.1);" class="w-100 d-flex align-items-center justify-content-center">
+                        <span class="text-secondary fw-bold">عکس ${item.name}</span>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title fw-bold mb-0">${item.name}</h5>
+                            <span class="badge bg-secondary rounded-pill">${item.category}</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title fw-bold mb-0">${item.name}</h5>
-                                <span class="badge bg-secondary rounded-pill">${item.category}</span>
-                            </div>
-                            <p class="card-text text-dark small mb-4">${item.description}</p>
-                            
-                            <!-- بخش قیمت و دکمه افزودن -->
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <span class="fw-bold fs-5 text-dark">${item.price.toLocaleString()} <span class="fs-6 text-muted">تومان</span></span>
-                                <!-- صدا زدن تابع addToCart با ارسال اطلاعات آیتم -->
-                                <button onclick="addToCart(${item.id}, '${item.name}', ${item.price})" class="btn btn-warning rounded-pill px-3 fw-bold shadow-sm">
-                                    افزودن +
-                                </button>
-                            </div>
+                        <p class="card-text text-dark small mb-4">${item.description}</p>
+                        
+                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                            <span class="fw-bold fs-5 text-dark">${item.price.toLocaleString()} <span class="fs-6 text-muted">تومان</span></span>
+                            <button onclick="addToCart(${item.id}, '${item.name}', ${item.price})" class="btn btn-warning rounded-pill px-3 fw-bold shadow-sm">
+                                افزودن +
+                            </button>
                         </div>
                     </div>
                 </div>
-            `;
-            itemsContainer.innerHTML += cardHTML;
-        });
-
-    } catch (error) {
-        console.error("خطا در دریافت اطلاعات منو:", error);
-        infoContainer.innerHTML = '<h3 class="text-danger mt-4">خطا در بارگذاری اطلاعات رستوران.</h3>';
-    }
+            </div>
+        `;
+        itemsContainer.innerHTML += cardHTML;
+    });
 }
 
 
