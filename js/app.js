@@ -204,13 +204,16 @@ async function fetchAndRenderMenu(restaurantId) {
             ? 'ارسال رایگان' 
             : `هزینه ارسال: ${menuData.restaurant.delivery_fee.toLocaleString()} تومان`;
         
-        infoContainer.innerHTML = `
-            <h1 class="display-4 fw-bold mb-2">${menuData.restaurant.name}</h1>
-            <div class="d-flex justify-content-center gap-3 fs-5 mt-3">
-                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">${menuData.restaurant.rating} ★</span>
-                <span class="badge glass-effect text-white px-3 py-2 shadow-sm border-0">${deliveryText}</span>
-            </div>
-        `;
+            infoContainer.innerHTML = `
+                <h1 class="display-4 fw-bold mb-2 text-dark">${menuData.restaurant.name}</h1>
+                <div class="d-flex justify-content-center gap-3 fs-5 mt-3 mb-4">
+                    <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">${menuData.restaurant.rating} ★</span>
+                    <span class="badge glass-effect text-dark px-3 py-2 shadow-sm border-0">${deliveryText}</span>
+                </div>
+                <button onclick="showRestaurantInfo()" class="btn btn-outline-dark rounded-pill px-4 glass-btn fw-bold shadow-sm">
+                    ℹ️ مشاهده اطلاعات کامل
+                </button>
+            `;
 
         // ۲. رندر کردن دکمه‌های دسته‌بندی (اضافه کردن دکمه "همه")
         // دکمه "همه" به صورت پیش‌فرض فعال (نارنجی) است
@@ -230,6 +233,46 @@ async function fetchAndRenderMenu(restaurantId) {
         infoContainer.innerHTML = '<h3 class="text-danger mt-4">خطا در بارگذاری اطلاعات رستوران.</h3>';
     }
 }
+
+
+/**
+ * نمایش اطلاعات کامل رستوران در مُدال
+ */
+function showRestaurantInfo() {
+    if (!currentRestaurantInfo) {
+        showToast("اطلاعات رستوران هنوز در دسترس نیست.", "bg-danger");
+        return;
+    }
+
+    const tbody = document.getElementById('restaurant-info-body');
+    
+    // تزریق اطلاعات به صورت لیست
+    tbody.innerHTML = `
+        <ul class="list-group list-group-flush bg-transparent">
+            <li class="list-group-item bg-transparent text-dark d-flex justify-content-between p-3">
+                <span class="fw-bold">📍 آدرس:</span> 
+                <span class="text-end" style="max-width: 60%;">${currentRestaurantInfo.address || 'ثبت نشده'}</span>
+            </li>
+            <li class="list-group-item bg-transparent text-dark d-flex justify-content-between p-3">
+                <span class="fw-bold">📞 تلفن:</span> 
+                <span dir="ltr">${currentRestaurantInfo.phone || 'ثبت نشده'}</span>
+            </li>
+            <li class="list-group-item bg-transparent text-dark d-flex justify-content-between p-3">
+                <span class="fw-bold">⏰ ساعت کاری:</span> 
+                <span dir="ltr">${currentRestaurantInfo.opening_hour} - ${currentRestaurantInfo.closing_hour}</span>
+            </li>
+            <li class="list-group-item bg-transparent text-dark d-flex justify-content-between p-3">
+                <span class="fw-bold">🛍️ مجموع سفارشات:</span> 
+                <span>${(currentRestaurantInfo.total_orders || 0).toLocaleString()} سفارش موفق</span>
+            </li>
+        </ul>
+    `;
+
+    // نمایش مُدال بوت‌استرپ
+    const infoModal = new bootstrap.Modal(document.getElementById('infoModal'));
+    infoModal.show();
+}
+
 
 /**
  * تابع فیلتر کردن منو بر اساس دسته‌بندی
