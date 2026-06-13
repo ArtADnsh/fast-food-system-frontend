@@ -1,5 +1,43 @@
 const appContainer = document.getElementById('app');
 
+
+// ==========================================
+// نمایش پاپ‌آپ
+// ==========================================
+function showToast(message, color = 'bg-success') {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        console.error("Toast container not found!");
+        return;
+    }
+    
+    // تعیین آیکون بر اساس رنگ
+    let icon = '✅';
+    if (color === 'bg-danger') icon = '❌';
+    if (color === 'bg-warning') icon = '⚠️';
+
+    // استفاده از نام متغیر متفاوت برای جلوگیری از تداخل با Bootstrap
+    const toastElement = document.createElement('div');
+    
+    toastElement.className = `${color} text-white px-4 py-3 rounded-pill shadow-lg mb-2 fw-bold d-flex align-items-center gap-2`;
+    toastElement.style.minWidth = '250px';
+    toastElement.style.transition = 'all 0.5s ease';
+    toastElement.style.opacity = '0';
+    toastElement.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    
+    container.appendChild(toastElement);
+    
+    // انیمیشن ورود
+    setTimeout(() => toastElement.style.opacity = '1', 10);
+    
+    // حذف خودکار بعد از ۳ ثانیه
+    setTimeout(() => {
+        toastElement.style.opacity = '0';
+        setTimeout(() => toastElement.remove(), 500);
+    }, 3000);
+}
+
+
 // ==========================================
 // منطق صفحه اصلی (Home) - فیلتر و مرتب‌سازی
 // ==========================================
@@ -145,6 +183,7 @@ function renderRestaurantCards(restaurantsToRender) {
 
 // متغیر سراسری برای نگهداری آیتم‌های منو جهت فیلتر کردن سریع
 let currentRestaurantItems = [];
+let currentRestaurantInfo = null;
 
 async function fetchAndRenderMenu(restaurantId) {
     const infoContainer = document.getElementById('restaurant-info');
@@ -158,6 +197,7 @@ async function fetchAndRenderMenu(restaurantId) {
         
         // ذخیره آیتم‌ها در متغیر سراسری برای استفاده در فیلتر
         currentRestaurantItems = menuData.items;
+        currentRestaurantInfo = menuData.restaurant;
 
         // ۱. رندر کردن هدر رستوران
         const deliveryText = menuData.restaurant.delivery_fee === 0 
@@ -242,7 +282,7 @@ function renderMenuItems(itemsToRender) {
                         
                         <div class="mt-auto d-flex justify-content-between align-items-center">
                             <span class="fw-bold fs-5 text-dark">${item.price.toLocaleString()} <span class="fs-6 text-muted">تومان</span></span>
-                            <button onclick="addToCart(${item.id}, '${item.name}', ${item.price})" class="btn btn-warning rounded-pill px-3 fw-bold shadow-sm">
+                            <button onclick="addToCart(${item.id}, '${item.name}', ${item.price}, ${currentRestaurantInfo.id}, ${currentRestaurantInfo.delivery_fee})" class="btn btn-warning rounded-pill px-3 fw-bold shadow-sm">
                                 افزودن +
                             </button>
                         </div>

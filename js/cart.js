@@ -35,28 +35,35 @@ function saveCart() {
 /**
  * اضافه کردن یک آیتم جدید به سبد خرید یا افزایش تعداد آن
  */
-function addToCart(id, name, price) {
-    // جستجو در آرایه برای پیدا کردن آیتم تکراری
-    const existingItem = cart.find(item => item.id === id);
+// ==========================================
+// منطق افزودن به سبد خرید
+// ==========================================
 
-    if (existingItem) {
-        // اگر آیتم قبلاً در سبد بود، فقط تعدادش را یکی زیاد می‌کنیم
-        existingItem.quantity += 1;
-    } else {
-        // اگر آیتم جدید بود، یک آبجکت جدید به آرایه پوش می‌کنیم
-        cart.push({
-            id: id,
-            name: name,
-            price: price,
-            quantity: 1
-        });
+function addToCart(id, name, price, restaurantId, deliveryFee) {
+    if (cart.length > 0 && cart[0].restaurantId === undefined) {
+            cart = [];
     }
 
-    // ذخیره تغییرات در حافظه
-    saveCart();
+    // لاجیک امنیتی: جلوگیری از خرید همزمان از دو رستوران مختلف
+    if (cart.length > 0 && cart[0].restaurantId !== restaurantId) {
+        showToast("شما فقط می‌توانید از یک رستوران در هر سفارش خرید کنید.", 'bg-danger');
+        return;
+    }
 
-    // یک لاگ برای دیباگ در کنسول
-    console.log(`آیتم ${name} به سبد خرید اضافه شد. وضعیت فعلی:`, cart);
+    const existingItem = cart.find(i => i.id === id);
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        // حالا آیدی رستوران و هزینه ارسال را هم ذخیره می‌کنیم
+        cart.push({ id, name, price, quantity: 1, restaurantId, deliveryFee });
+    }
+    
+    saveCart(); 
+    
+    // یک پیام موقت برای کاربر
+    showToast(`${name} به سبد خرید اضافه شد!`);   
+     
+    if(typeof updateCartBadge === 'function') updateCartBadge();
 }
 
 /**
@@ -104,7 +111,6 @@ function renderCartPage() {
     itemsContainer.innerHTML = '';
     
     let subtotal = 0;
-    const DELIVERY_FEE = 25000; // هزینه ارسال (فعلاً ثابت)
 
     // تولید HTML برای هر آیتم در سبد
     cart.forEach(item => {
@@ -147,10 +153,13 @@ function renderCartPage() {
     });
 
     // آپدیت کردن مبالغ فاکتور در صفحه
-    document.getElementById('cart-subtotal').innerHTML = `${subtotal.toLocaleString()} <span class="small fw-normal">تومان</span>`;
-    document.getElementById('cart-delivery').innerHTML = `${DELIVERY_FEE.toLocaleString()} <span class="small fw-normal">تومان</span>`;
-    document.getElementById('cart-total').innerHTML = `${(subtotal + DELIVERY_FEE).toLocaleString()} <span class="small fw-normal text-dark">تومان</span>`;
-}
+    // خواندن هزینه ارسال از اولین آیتم سبد خرید (چون همه از یک رستوران هستند)
+    const dynamicDeliveryFee = cart.length > 0 ? cart[0].deliveryFee : 0;
+    const total = subtotal + dynamicDeliveryFee;
+
+    document.getElementById('cart-subtotal').innerText = subtotal.toLocaleString();
+    document.getElementById('cart-delivery').innerText = dynamicDeliveryFee.toLocaleString();
+    document.getElementById('cart-total').innerText = total.toLocaleString();}
 
 /**
  * افزایش تعداد یک آیتم
