@@ -57,15 +57,15 @@ Since this is a Vanilla JS SPA, you don't need Node.js or npm to build it. Howev
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/your-username/fast-food-system-frontend.git](https://github.com/your-username/fast-food-system-frontend.git)
+   git clone [https://github.com/your-username/fast-food-system-frontend.git](https://github.com/your- username/fast-food-system-frontend.git)
    cd fast-food-system-frontend
    ```
  2. **Serve the project:**
-  - **Using VS Code:** Install the **"Live Server"** extension, right-click on `index.html`, and select *Open with Live Server*.
-  - **Using Python:** Run the following command in your Ubuntu terminal inside the frontend folder:
-   ```bash
-   python3 -m http.server 5500
-   ```
+    - **Using VS Code:** Install the **"Live Server"** extension, right-click on `index.html`, and select *Open with Live Server*.
+    - **Using Python:** Run the following command in your Ubuntu terminal inside the frontend folder:
+    ```bash
+    python3 -m http.server 5500
+    ```
    Then open `http://localhost:5500` in your browser.
 3. **Connect to Backend:**
    Ensure the Django Backend API is running on `http://localhost:8000` (or update the API base URL in js/app.js to match your backend port).
