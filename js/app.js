@@ -342,7 +342,7 @@ function renderMenuItems(itemsToRender) {
 // منطق صفحه تاریخچه سفارشات
 // ==========================================
 
-// متغیر سراسری برای ذخیره موقت سفارشات جهت نمایش در فاکتور
+// متغیر سراسری برای ذخیره موقت سفارشات جهت نمایش در فاکتور و نظر
 let userOrdersHistory = [];
 
 async function fetchAndRenderOrders() {
@@ -388,7 +388,16 @@ async function fetchAndRenderOrders() {
             else if (order.status === 'Delivering') { badgeClass = 'bg-info text-dark'; statusText = 'در مسیر (پیک)'; }
             else if (order.status === 'Delivered') { badgeClass = 'bg-success'; statusText = 'تحویل داده شده'; }
 
-            // 🚨 آپدیت مهم: دکمه مشاهده فاکتور حالا تابع viewInvoice را صدا می‌زند 🚨
+            // آپدیت: مدیریت هوشمند دکمه ثبت یا مشاهده نظر بر اساس وضعیت سفارش
+            let reviewBtnHTML = '';
+            if (order.status === 'Delivered') {
+                if (order.has_review) {
+                    reviewBtnHTML = `<button onclick="openViewReviewModal(${order.id})" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm w-100">مشاهده نظر ⭐</button>`;
+                } else {
+                    reviewBtnHTML = `<button onclick="openAddReviewModal(${order.id})" class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm fw-bold w-100">ثبت نظر 📝</button>`;
+                }
+            }
+
             const cardHTML = `
                 <div class="glass-card p-4 mb-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 shadow-sm">
                     <div>
@@ -398,7 +407,11 @@ async function fetchAndRenderOrders() {
                     <div class="d-flex align-items-center flex-wrap gap-3 gap-md-4 mt-2 mt-md-0">
                         <span class="fw-bold fs-5 text-dark">${order.total_price.toLocaleString()} <span class="small fw-normal">تومان</span></span>
                         <span class="badge ${badgeClass} rounded-pill px-3 py-2 shadow-sm">${statusText}</span>
-                        <button onclick="viewInvoice(${order.id})" class="btn btn-outline-dark btn-sm rounded-pill px-3 glass-btn">مشاهده فاکتور</button>
+                        
+                        <div class="d-flex flex-column gap-2" style="min-width: 120px;">
+                            <button onclick="viewInvoice(${order.id})" class="btn btn-outline-dark btn-sm rounded-pill px-3 glass-btn">مشاهده فاکتور</button>
+                            ${reviewBtnHTML}
+                        </div>
                     </div>
                 </div>
             `;
@@ -414,17 +427,14 @@ async function fetchAndRenderOrders() {
  * تابع نمایش فاکتور در مُدال بوت‌استرپ
  */
 function viewInvoice(orderId) {
-    // پیدا کردن سفارش مورد نظر از متغیر سراسری
     const order = userOrdersHistory.find(o => o.id === orderId);
     if (!order) return;
 
-    // ۱. آپدیت هدر و قیمت کل
     document.getElementById('invoiceModalTitle').innerText = `فاکتور سفارش #${order.id}`;
     document.getElementById('invoiceTotalAmount').innerText = `${order.total_price.toLocaleString()} تومان`;
 
-    // ۲. تولید ردیف‌های جدول برای محصولات
     const tbody = document.getElementById('invoice-items-body');
-    tbody.innerHTML = ''; // پاک کردن محتوای قبلی
+    tbody.innerHTML = ''; 
 
     order.items.forEach(item => {
         tbody.innerHTML += `
@@ -441,6 +451,85 @@ function viewInvoice(orderId) {
     const modalElement = document.getElementById('invoiceModal');
     const invoiceModal = new bootstrap.Modal(modalElement);
     invoiceModal.show();
+}
+
+// ==========================================
+// توابع جدید: مدیریت پاپ‌آپ‌های نظرات
+// ==========================================
+
+/**
+ * باز کردن مُدال ثبت نظر جدید
+ */
+function openAddReviewModal(orderId) {
+    document.getElementById('review-order-id').value = orderId;
+    document.getElementById('review-rating').value = '5'; 
+    document.getElementById('review-comment').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('addReviewModal'));
+    modal.show();
+}
+
+/**
+ * باز کردن مُدال نمایش نظر ثبت شده قبلی
+ */
+function openViewReviewModal(orderId) {
+    const order = userOrdersHistory.find(o => o.id === orderId);
+    if (!order || !order.review_data) return;
+
+    const ratingNum = order.review_data.rating;
+    // تولید ستاره‌های پر و خالی متناسب با امتیاز
+    document.getElementById('view-review-rating').innerText = '★'.repeat(ratingNum) + '☆'.repeat(5 - ratingNum);
+    document.getElementById('view-review-comment').innerText = order.review_data.comment || 'متنی برای این نظر ثبت نشده است.';
+    
+    if (order.review_data.created_at) {
+        const d = new Date(order.review_data.created_at);
+        document.getElementById('view-review-date').innerText = 'ثبت شده در: ' + new Intl.DateTimeFormat('fa-IR').format(d);
+    } else {
+        document.getElementById('view-review-date').innerText = '';
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('viewReviewModal'));
+    modal.show();
+}
+
+/**
+ * ارسال درخواست POST برای ثبت نظر جدید در بک‌اند
+ */
+async function submitReview() {
+    const orderId = document.getElementById('review-order-id').value;
+    const rating = document.getElementById('review-rating').value;
+    const comment = document.getElementById('review-comment').value;
+    const token = getCookie('access_token');
+
+    try {
+        const response = await fetch(`http://localhost:8000/api/reviews/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                order: parseInt(orderId),
+                rating: parseInt(rating),
+                comment: comment
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            // اگر خطایی در بخش validate سریالایزر رخ داده باشد
+            throw new Error(errorData.error || errorData.non_field_errors?.[0] || 'خطا در ثبت نظر');
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById('addReviewModal')).hide();
+        showToast("نظر شما با موفقیت ثبت شد!", "bg-success");
+        
+        // رفرش مجدد کامپوننت سفارشات برای تغییر ظاهر دکمه به "مشاهده نظر"
+        fetchAndRenderOrders(); 
+
+    } catch (error) {
+        showToast(error.message, "bg-danger");
+    }
 }
 
 
@@ -707,7 +796,7 @@ function renderOrdersTable(orders) {
                     <select class="form-select form-select-sm" onchange="updateOrder(${order.order_id}, 'status', this.value)">
                         <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>در انتظار</option>
                         <option value="Delivering" ${order.status === 'Delivering' ? 'selected' : ''}>در حال ارسال</option>
-                        <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>تحویل شده</option>
+                        <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>تحویل داده شده</option>
                         <option value="Cancelled" ${order.status === 'Cancelled' ? 'selected' : ''}>لغو شده</option>
                     </select>
                 </td>

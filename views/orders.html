@@ -37,3 +37,51 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addReviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg" style="backdrop-filter: blur(15px);">
+            <div class="modal-header border-secondary border-opacity-25">
+                <h5 class="modal-title fw-bold text-dark">ثبت نظر 📝</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-dark">
+                <input type="hidden" id="review-order-id">
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">امتیاز (۱ تا ۵) ⭐</label>
+                    <select class="form-select bg-transparent border-secondary text-dark shadow-sm" id="review-rating" required>
+                        <option value="5" class="text-dark">۵ ستاره (عالی)</option>
+                        <option value="4" class="text-dark">۴ ستاره (خوب)</option>
+                        <option value="3" class="text-dark">۳ ستاره (متوسط)</option>
+                        <option value="2" class="text-dark">۲ ستاره (ضعیف)</option>
+                        <option value="1" class="text-dark">۱ ستاره (خیلی بد)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">تجربه خود را بنویسید (اختیاری)</label>
+                    <textarea class="form-control bg-transparent border-secondary text-dark shadow-sm" id="review-comment" rows="3" placeholder="غذا چطور بود؟ سرعت ارسال چطور بود؟"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm" onclick="submitReview()">ارسال نظر</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="viewReviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 shadow-lg" style="backdrop-filter: blur(15px);">
+            <div class="modal-header border-secondary border-opacity-25">
+                <h5 class="modal-title fw-bold text-dark">نظر ثبت شده شما ⭐</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-dark text-center">
+                <h2 class="text-warning mb-3 text-shadow-sm" id="view-review-rating">★★★★★</h2>
+                <p class="fst-italic border-start border-warning border-3 bg-light bg-opacity-25 p-3 rounded shadow-sm" id="view-review-comment"></p>
+                <small class="text-muted fw-bold" id="view-review-date"></small>
+            </div>
+        </div>
+    </div>
+</div>
