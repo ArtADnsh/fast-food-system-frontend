@@ -1,4 +1,6 @@
 # Fast-Food Management System (Frontend) 🍔
+⚙️ **Looking for the Backend?** Check out the Django REST Framework & MySQL API repository [here](https://github.com/YourUsername/fast-food-system-backend).
+---
 
 Welcome to the frontend repository of the **Fast-Food Management System** (`fast-food-system`). This project is a highly responsive, dynamic, and modern Single Page Application (SPA) built entirely with **Vanilla JavaScript, HTML5, and CSS3**, without relying on heavy frontend frameworks like React or Vue. 
 
