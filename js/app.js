@@ -445,6 +445,326 @@ function viewInvoice(orderId) {
 
 
 // ==========================================
+// منطق پنل مدیریت (Admin Dashboard)
+// ==========================================
+
+async function fetchAndRenderAdminMenu() {
+    const tbody = document.getElementById('admin-menu-body');
+    if (!tbody) return;
+
+    //  گرفتن توکن برای احراز هویت ادمین
+    const token = getCookie('access_token');
+
+    try {
+        //  ارسال درخواست به اندپوینت امن my-menu همراه با توکن
+        const response = await fetch(`http://localhost:8000/api/restaurants/my-menu/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 403) throw new Error("شما مدیر هیچ رستورانی نیستید.");
+            throw new Error("خطا در دریافت منو");
+        }
+        
+        const menuData = await response.json();
+        
+        const items = menuData.results || menuData; 
+        
+        tbody.innerHTML = ''; // پاک کردن متن "در حال بارگذاری..."
+
+        if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-dark">هیچ غذایی در منو ثبت نشده است.</td></tr>`;
+            return;
+        }
+
+        // رندر کردن هر ردیف از جدول
+        items.forEach(item => {
+            const desc = item.description ? item.description.replace(/'/g, "\\'") : '';
+            
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-dark">${item.name}</td>
+                    <td><span class="badge bg-secondary rounded-pill px-3 py-2">${item.category}</span></td>
+                    <td class="text-dark fw-bold">${item.price.toLocaleString()}</td>
+                    <td class="text-center">
+                        <button onclick="editFood(${item.id}, '${item.name}', '${item.category}', ${item.price}, '${desc}')" class="btn btn-sm btn-outline-dark rounded-pill px-3 me-2 glass-btn">ویرایش</button>
+                        <button onclick="deleteFood(${item.id}, '${item.name}')" class="btn btn-sm btn-outline-danger rounded-pill px-3 glass-btn">حذف</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (error) {
+        console.error("Admin Error:", error);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger fw-bold py-4">${error.message}</td></tr>`;
+        showToast(error.message, "bg-danger");
+    }
+}
+
+
+// متغیرهای سراسری برای تشخیص حالت فرم (ساخت جدید یا ویرایش)
+let isEditingFood = false;
+let editingFoodId = null;
+
+/**
+ * باز کردن مدال برای اضافه کردن غذای جدید
+ */
+function openAddFoodModal() {
+    isEditingFood = false;
+    editingFoodId = null;
+    
+    // فرم را خالی کن و عنوان را تغییر بده
+    document.getElementById('foodForm').reset();
+    document.getElementById('foodModalTitle').innerText = 'افزودن غذای جدید 🍔';
+    
+    const modal = new bootstrap.Modal(document.getElementById('foodModal'));
+    modal.show();
+}
+
+/**
+ * باز کردن مدال برای ویرایش یک غذای موجود
+ */
+function editFood(id, name, category, price, description) {
+    isEditingFood = true;
+    editingFoodId = id;
+    
+    // پر کردن فیلدها با اطلاعات قبلی
+    document.getElementById('food-name').value = name;
+    document.getElementById('food-category').value = category;
+    document.getElementById('food-price').value = price;
+    // اگر توضیحاتی بود آن را بگذار، وگرنه خالی بماند
+    document.getElementById('food-description').value = description !== 'undefined' ? description : '';
+    
+    document.getElementById('foodModalTitle').innerText = 'ویرایش غذا ✏️';
+    
+    const modal = new bootstrap.Modal(document.getElementById('foodModal'));
+    modal.show();
+}
+
+
+/**
+ * ارسال اطلاعات به بک‌اند (POST برای ساخت، PUT برای ویرایش)
+ */
+async function saveFood() {
+    const name = document.getElementById('food-name').value;
+    const category = document.getElementById('food-category').value;
+    const price = document.getElementById('food-price').value;
+    const description = document.getElementById('food-description').value;
+
+    if (!name || !category || !price) {
+        showToast("لطفا تمام فیلدهای ستاره‌دار را پر کنید.", "bg-danger");
+        return;
+    }
+
+    const payload = { name, category, price, description };
+    const token = getCookie('access_token');
+    
+    // اگر در حال ویرایش هستیم، آیدی غذا را به URL اضافه می‌کنیم
+    const url = isEditingFood 
+        ? `http://localhost:8000/api/restaurants/my-menu/${editingFoodId}/` 
+        : `http://localhost:8000/api/restaurants/my-menu/`;
+    
+    const method = isEditingFood ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error("خطا در ذخیره اطلاعات");
+
+        // بستن پاپ‌آپ
+        const modalElement = document.getElementById('foodModal');
+        bootstrap.Modal.getInstance(modalElement).hide();
+        
+        showToast("تغییرات با موفقیت ذخیره شد!", "bg-success");
+        
+        // رفرش کردن جدول برای نمایش دیتای جدید
+        fetchAndRenderAdminMenu();
+
+    } catch (error) {
+        showToast("مشکلی در ارتباط با سرور پیش آمد.", "bg-danger");
+    }
+}
+
+/**
+ * حذف یک غذا
+ */
+async function deleteFood(id, name) {
+    if (!confirm(`آیا از حذف "${name}" مطمئن هستید؟ این عمل غیرقابل بازگشت است.`)) return;
+
+    const token = getCookie('access_token');
+    try {
+        const response = await fetch(`http://localhost:8000/api/restaurants/my-menu/${id}/`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error("خطا در حذف");
+
+        showToast(`${name} با موفقیت حذف شد.`, "bg-success");
+        fetchAndRenderAdminMenu(); // رفرش جدول
+
+    } catch (error) {
+        showToast("خطا در حذف آیتم.", "bg-danger");
+    }
+}
+
+
+// متغیر سراسری برای نگهداری لیست پیک‌های این رستوران
+let availableDeliveryStaff = [];
+
+/**
+ * بارگذاری سفارشات و لیست پیک‌ها از سرور
+ */
+async function loadAdminOrders() {
+    const token = getCookie('access_token');
+    if (!token) return;
+
+    try {
+        // ۱. دریافت لیست پیک‌های واجد شرایط (Role = DeliveryPerson)
+        const staffRes = await fetch('http://localhost:8000/api/admin/delivery-staff/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (staffRes.ok) {
+            availableDeliveryStaff = await staffRes.json();
+        }
+
+        // ۲. دریافت لیست سفارشات رستوران
+        const ordersRes = await fetch('http://localhost:8000/api/admin/orders/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!ordersRes.ok) throw new Error('خطا در دریافت سفارشات');
+        
+        const orders = await ordersRes.json();
+        renderOrdersTable(orders);
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById('admin-orders-container').innerHTML = 
+            `<div class="alert alert-danger">خطا در بارگذاری پنل مدیریت.</div>`;
+    }
+}
+
+/**
+ * ساخت جدول و دراپ‌داون‌ها
+ */
+function renderOrdersTable(orders) {
+    const container = document.getElementById('admin-orders-container');
+    if (!container) return;
+
+    if (orders.length === 0) {
+        container.innerHTML = `<div class="alert alert-info">سفارشی برای نمایش وجود ندارد.</div>`;
+        return;
+    }
+
+    let tableHTML = `
+        <table class="table table-hover align-middle glass-effect shadow-sm rounded">
+            <thead class="table-dark">
+                <tr>
+                    <th>سفارش</th>
+                    <th>مشتری</th>
+                    <th>وضعیت آماده‌سازی</th>
+                    <th>وضعیت ارسال</th>
+                    <th>انتساب پیک</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    orders.forEach(order => {
+        // ساخت دراپ‌داون پیک‌ها برای این سفارش خاص
+        let staffOptions = `<option value="">انتخاب پیک...</option>`;
+        availableDeliveryStaff.forEach(staff => {
+            const isSelected = (order.delivery_staff === staff.staff_id) ? 'selected' : '';
+            staffOptions += `<option value="${staff.staff_id}" ${isSelected}>${staff.name}</option>`;
+        });
+
+        tableHTML += `
+            <tr>
+                <td class="fw-bold">#${order.order_id}</td>
+                <td>${order.user_name || 'کاربر سیستم'}</td>
+                
+                <td>
+                    <select class="form-select form-select-sm" onchange="updateOrder(${order.order_id}, 'preparation_status', this.value)">
+                        <option value="Pending" ${order.preparation_status === 'Pending' ? 'selected' : ''}>در صف بررسی</option>
+                        <option value="Cooking" ${order.preparation_status === 'Cooking' ? 'selected' : ''}>در حال پخت</option>
+                        <option value="Ready" ${order.preparation_status === 'Ready' ? 'selected' : ''}>آماده ارسال</option>
+                    </select>
+                </td>
+
+                <td>
+                    <select class="form-select form-select-sm" onchange="updateOrder(${order.order_id}, 'status', this.value)">
+                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>در انتظار</option>
+                        <option value="Delivering" ${order.status === 'Delivering' ? 'selected' : ''}>در حال ارسال</option>
+                        <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>تحویل شده</option>
+                        <option value="Cancelled" ${order.status === 'Cancelled' ? 'selected' : ''}>لغو شده</option>
+                    </select>
+                </td>
+
+                <td>
+                    <select class="form-select form-select-sm border-warning" onchange="updateOrder(${order.order_id}, 'delivery_staff', this.value)">
+                        ${staffOptions}
+                    </select>
+                </td>
+            </tr>
+        `;
+    });
+
+    tableHTML += `</tbody></table>`;
+    container.innerHTML = tableHTML;
+}
+
+/**
+ * ارسال درخواست PATCH به بک‌اند با هر تغییر در منوها
+ */
+async function updateOrder(orderId, field, value) {
+    const token = getCookie('access_token');
+    const payload = {};
+    
+    // اگر ادمین گزینه "انتخاب پیک..." را زد، مقدار null بفرست
+    payload[field] = value === "" ? null : value; 
+
+    try {
+        const res = await fetch(`http://localhost:8000/api/admin/orders/${orderId}/`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errorData = await res.json();
+            // اگر ارور Validation مربوط به نقش پیک بود
+            let errorMsg = "خطا در اعمال تغییرات.";
+            if (errorData.delivery_staff) errorMsg = errorData.delivery_staff[0];
+            throw new Error(errorMsg);
+        }
+        
+        // می‌توانید اینجا یک Toast یا Alert کوچک موفقیت نشان دهید
+        console.log(`سفارش ${orderId} با موفقیت آپدیت شد.`);
+        
+    } catch (error) {
+        alert(error.message);
+        // در صورت خطا، جدول را رفرش می‌کنیم تا مقادیر به حالت قبل برگردند
+        loadAdminOrders(); 
+    }
+}
+
+
+// ==========================================
 // منطق اصلی مسیریابی (Router) و محافظت از مسیرها
 // ==========================================
 async function loadPage() {
@@ -494,6 +814,10 @@ async function loadPage() {
         else if (pageName === 'profile') {
             fetchProfile();
         }
+        else if (pageName === 'admin') {
+            fetchAndRenderAdminMenu();
+            loadAdminOrders();
+        }
 
     } catch (error) {
         appContainer.innerHTML = `
@@ -505,6 +829,7 @@ async function loadPage() {
         `;
     }
 }
+
 
 window.addEventListener('hashchange', loadPage);
 window.addEventListener('DOMContentLoaded', loadPage);

@@ -71,6 +71,7 @@ async function loginUser(e) {
         // Save the real token and user data from the backend
         setCookie('access_token', data.access_token, 7);
         localStorage.setItem('user_info', JSON.stringify(data.user_info));
+        localStorage.setItem('is_admin', data.is_admin);
         
         // Update the UI and redirect
         checkAuth();
@@ -88,6 +89,7 @@ async function loginUser(e) {
 function logoutUser() {
     deleteCookie('access_token');
     localStorage.removeItem('user_info'); // --> پاک کردن اطلاعات کاربر
+    localStorage.removeItem('is_admin');
     checkAuth(); 
     window.location.hash = 'home'; 
 }
@@ -111,25 +113,29 @@ function checkAuth() {
         const savedUser = localStorage.getItem('user_info');
         const user = savedUser ? JSON.parse(savedUser) : { name: "کاربر", phone: "---" };
 
+        const isAdmin = localStorage.getItem('is_admin') === 'true';
+        const adminBtnHTML = isAdmin ? 
+            `<a href="#admin" class="btn btn-warning rounded-pill px-4 me-2 shadow-sm fw-bold">👨‍🍳 پنل رستوران</a>` : '';
+
         // کاربر لاگین است: نمایش دراپ‌داون با اطلاعات کاربر
         authButtonsContainer.innerHTML = `
-            <div class="dropdown d-inline-block">
-                <button class="btn glass-btn rounded-pill px-4 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    پروفایل من
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end glass-effect border-0 shadow mt-2 p-2" style="min-width: 220px;">
-                    
-                    <!-- بخش هدر پروفایل شامل نام و شماره -->
-                    <li class="px-3 py-2 text-center border-bottom border-secondary mb-2">
-                        <span class="fw-bold d-block text-dark fs-6">${user.name}</span>
-                        <span class="text-muted small">${user.phone}</span>
-                    </li>
-                    
-                    <li><a class="dropdown-item text-dark fw-bold rounded" href="#orders">سفارشات من</a></li>
-                    <li><a class="dropdown-item text-dark fw-bold rounded" href="#profile">تنظیمات</a></li>
-                    <li><hr class="dropdown-divider border-secondary"></li>
-                    <li><button class="dropdown-item text-danger fw-bold rounded" onclick="logoutUser()">خروج</button></li>
-                </ul>
+            <div class="d-flex align-items-center">
+                ${adminBtnHTML} 
+                <div class="dropdown d-inline-block">
+                    <button class="btn glass-btn rounded-pill px-4 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        پروفایل من
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end glass-effect border-0 shadow mt-2 p-2" style="min-width: 220px;">
+                        <li class="px-3 py-2 text-center border-bottom border-secondary mb-2">
+                            <span class="fw-bold d-block text-dark fs-6">${user.name}</span>
+                            <span class="text-muted small">${user.phone}</span>
+                        </li>
+                        <li><a class="dropdown-item text-dark fw-bold rounded" href="#orders">سفارشات من</a></li>
+                        <li><a class="dropdown-item text-dark fw-bold rounded" href="#profile">تنظیمات</a></li>
+                        <li><hr class="dropdown-divider border-secondary"></li>
+                        <li><button class="dropdown-item text-danger fw-bold rounded" onclick="logoutUser()">خروج</button></li>
+                    </ul>
+                </div>
             </div>
         `;
     } else {
